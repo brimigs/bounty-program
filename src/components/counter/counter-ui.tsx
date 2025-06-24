@@ -82,7 +82,7 @@ export function BountyCreate() {
       </div>
 
       <Button onClick={handleCreate} disabled={creating || !isValid}>
-        Create{creating && '...'}
+        Submit{creating && '...'}
       </Button>
     </div>
   )

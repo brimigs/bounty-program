@@ -17,7 +17,7 @@ export default function CounterFeature() {
       <AppHero
         title="Bounty Program"
         subtitle={
-          'Create a new bounty by entering a public key address and memo, then clicking "Create". Each bounty is stored on-chain with the specified address and memo.'
+          'Submit a new bounty by entering a public key address and memo, then clicking "Submit". It costs 1 token to submit a bounty so your wallet address MUST be on the allow list for the submission to go through.'
         }
       >
         <p className="mb-6">
