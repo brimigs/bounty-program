@@ -24,7 +24,7 @@ export function getCounterProgramId(cluster: Cluster) {
     case 'devnet':
     case 'testnet':
       // This is the program ID for the TestTransferHook program on devnet and testnet.
-      return new PublicKey('DvfS2GavVdWsTb4uvXwKUb5A6QysznCJCPB6cx3duQGE')
+      return new PublicKey('vRF8A5fAANqXW8hpDvZ9gsugZKCPYhwGg5mbKffJx6P')
     case 'mainnet-beta':
     default:
       return COUNTER_PROGRAM_ID

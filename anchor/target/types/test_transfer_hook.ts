@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/test_transfer_hook.json`.
  */
 export type TestTransferHook = {
-  "address": "DvfS2GavVdWsTb4uvXwKUb5A6QysznCJCPB6cx3duQGE",
+  "address": "vRF8A5fAANqXW8hpDvZ9gsugZKCPYhwGg5mbKffJx6P",
   "metadata": {
     "name": "testTransferHook",
     "version": "0.1.0",
