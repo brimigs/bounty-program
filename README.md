@@ -1,11 +1,11 @@
-# bountry-program
+# bounty
 
 This is a Next.js app containing:
 
 - Tailwind CSS setup for styling
 - Useful wallet UI elements setup using [@solana/web3.js](https://www.npmjs.com/package/@solana/web3.js)
-- A basic Counter Solana program written in Anchor
-- UI components for interacting with the Counter program
+- A basic Bounty Solana program written in Anchor
+- UI components for interacting with the Bounty program
 
 ## Getting Started
 
@@ -14,7 +14,7 @@ This is a Next.js app containing:
 #### Download the template
 
 ```shell
-pnpm create solana-dapp@latest -t gh:solana-developers/solana-templates/legacy/bountry-program
+pnpm create solana-dapp@latest -t gh:solana-developers/solana-templates/legacy/bounty
 ```
 
 #### Install Dependencies

@@ -6,10 +6,30 @@ use anchor_spl::{
 
 declare_id!("vRF8A5fAANqXW8hpDvZ9gsugZKCPYhwGg5mbKffJx6P");
 
-pub const REQUIRED_TOKEN_MINT: Pubkey = anchor_lang::solana_program::pubkey!("11111111111111111111111111111111");
+pub const PROGRAM_CONFIG_SEED: &[u8] = b"program_config";
+
 #[program]
 pub mod bounty {
     use super::*;
+
+    pub fn initialize_config(
+        ctx: Context<InitializeConfig>,
+        required_token_mint: Pubkey,
+    ) -> Result<()> {
+        let config = &mut ctx.accounts.program_config;
+        config.authority = ctx.accounts.authority.key();
+        config.required_token_mint = required_token_mint;
+        Ok(())
+    }
+
+    pub fn update_required_mint(
+        ctx: Context<UpdateRequiredMint>,
+        new_mint: Pubkey,
+    ) -> Result<()> {
+        let config = &mut ctx.accounts.program_config;
+        config.required_token_mint = new_mint;
+        Ok(())
+    }
 
     pub fn create_bounty(
         ctx: Context<CreateBounty>,
@@ -17,7 +37,7 @@ pub mod bounty {
         memo: String,
     ) -> Result<()> {
         require!(
-            ctx.accounts.mint.key() == REQUIRED_TOKEN_MINT,
+            ctx.accounts.mint.key() == ctx.accounts.program_config.required_token_mint,
             ErrorCode::InvalidTokenMint
         );
 
@@ -82,6 +102,41 @@ pub struct BountyInfo {
     updated_at: i64,
 }
 
+#[account]
+#[derive(InitSpace)]
+pub struct ProgramConfig {
+    pub authority: Pubkey,
+    pub required_token_mint: Pubkey,
+}
+
+#[derive(Accounts)]
+pub struct InitializeConfig<'info> {
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    #[account(
+        init,
+        payer = authority,
+        space = 8 + ProgramConfig::INIT_SPACE,
+        seeds = [PROGRAM_CONFIG_SEED],
+        bump
+    )]
+    pub program_config: Account<'info, ProgramConfig>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct UpdateRequiredMint<'info> {
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    #[account(
+        mut,
+        seeds = [PROGRAM_CONFIG_SEED],
+        bump,
+        has_one = authority @ ErrorCode::Unauthorized
+    )]
+    pub program_config: Account<'info, ProgramConfig>,
+}
+
 #[derive(Accounts)]
 pub struct CreateBounty<'info> {
     #[account(mut)]
@@ -93,13 +148,25 @@ pub struct CreateBounty<'info> {
     )]
     pub bounty_account: Account<'info, BountyInfo>,
     #[account(
-        constraint = mint.key() == REQUIRED_TOKEN_MINT @ ErrorCode::InvalidTokenMint
+        seeds = [PROGRAM_CONFIG_SEED],
+        bump
+    )]
+    pub program_config: Account<'info, ProgramConfig>,
+    #[account(
+        constraint = mint.key() == program_config.required_token_mint @ ErrorCode::InvalidTokenMint
     )]
     pub mint: InterfaceAccount<'info, Mint>,
-    #[account(mut)]
+    #[account(
+        init_if_needed,
+        payer = signer,
+        associated_token::mint = mint,
+        associated_token::authority = bounty_account,
+        associated_token::token_program = token_program
+    )]
     pub bounty_token_account: InterfaceAccount<'info, TokenAccount>,
     #[account( 
-        mut, 
+        init_if_needed,
+        payer = signer,
         associated_token::mint = mint,
         associated_token::authority = signer,
         associated_token::token_program = token_program

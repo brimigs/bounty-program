@@ -9,6 +9,7 @@ import { useCluster } from '../cluster/cluster-data-access'
 import { useAnchorProvider } from '../solana/solana-provider'
 import { useTransactionToast } from '../use-transaction-toast'
 import { toast } from 'sonner'
+import { BN } from '@coral-xyz/anchor'
 
 export function useCounterProgram() {
   const { connection } = useConnection()
@@ -30,16 +31,62 @@ export function useCounterProgram() {
 
   const createBounty = useMutation({
     mutationKey: ['bounty', 'create', { cluster }],
-    mutationFn: ({ keypair, address, memo }: { keypair: Keypair; address: PublicKey; memo: string }) =>
-      program.methods
+    mutationFn: async ({ keypair, address, memo }: { keypair: Keypair; address: PublicKey; memo: string }) => {
+      const [configPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from('program_config')],
+        programId
+      )
+      
+      // Get config to know the required mint
+      const config = await program.account.programConfig.fetch(configPda)
+      const mint = config.requiredTokenMint
+      
+      // Check if the mint uses Token-2022 or regular SPL Token
+      const mintInfo = await connection.getAccountInfo(mint)
+      if (!mintInfo) {
+        throw new Error('Mint account not found')
+      }
+      
+      const isToken2022 = mintInfo.owner.equals(new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'))
+      const tokenProgramId = isToken2022 
+        ? new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb')
+        : new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
+      
+      // Derive token accounts
+      const [userTokenAccount] = PublicKey.findProgramAddressSync(
+        [
+          provider.publicKey.toBuffer(),
+          tokenProgramId.toBuffer(),
+          mint.toBuffer(),
+        ],
+        new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL')
+      )
+      
+      const [bountyTokenAccount] = PublicKey.findProgramAddressSync(
+        [
+          keypair.publicKey.toBuffer(),
+          tokenProgramId.toBuffer(),
+          mint.toBuffer(),
+        ],
+        new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL')
+      )
+      
+      return program.methods
         .createBounty(address, memo)
         .accounts({
-          bountyAccount: keypair.publicKey,
           signer: provider.publicKey,
+          bountyAccount: keypair.publicKey,
+          programConfig: configPda,
+          mint,
+          bountyTokenAccount,
+          userTokenAccount,
+          tokenProgram: tokenProgramId,
+          associatedTokenProgram: 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
           systemProgram: '11111111111111111111111111111111',
         })
         .signers([keypair])
-        .rpc(),
+        .rpc()
+    },
     onSuccess: async (signature) => {
       transactionToast(signature)
       await accounts.refetch()
@@ -49,12 +96,181 @@ export function useCounterProgram() {
     },
   })
 
+  const initializeConfig = useMutation({
+    mutationKey: ['config', 'initialize', { cluster }],
+    mutationFn: ({ requiredTokenMint }: { requiredTokenMint: PublicKey }) => {
+      const [configPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from('program_config')],
+        programId
+      )
+      return program.methods
+        .initializeConfig(requiredTokenMint)
+        .accounts({
+          authority: provider.publicKey,
+          programConfig: configPda,
+          systemProgram: '11111111111111111111111111111111',
+        })
+        .rpc()
+    },
+    onSuccess: async (signature) => {
+      transactionToast(signature)
+      toast.success('Config initialized successfully')
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to initialize config: ${error.message}`)
+    },
+  })
+
+  const updateRequiredMint = useMutation({
+    mutationKey: ['config', 'update-mint', { cluster }],
+    mutationFn: ({ newMint }: { newMint: PublicKey }) => {
+      const [configPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from('program_config')],
+        programId
+      )
+      return program.methods
+        .updateRequiredMint(newMint)
+        .accounts({
+          authority: provider.publicKey,
+          programConfig: configPda,
+        })
+        .rpc()
+    },
+    onSuccess: async (signature) => {
+      transactionToast(signature)
+      toast.success('Required mint updated successfully')
+      await configQuery.refetch()
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to update required mint: ${error.message}`)
+    },
+  })
+
+  const updateBounty = useMutation({
+    mutationKey: ['bounty', 'update', { cluster }],
+    mutationFn: ({ bountyAccount, address, memo }: { bountyAccount: PublicKey; address: PublicKey; memo: string }) =>
+      program.methods
+        .updateBounty(address, memo)
+        .accounts({
+          signer: provider.publicKey,
+          bountyAccount,
+          owner: provider.publicKey,
+        })
+        .rpc(),
+    onSuccess: async (signature) => {
+      transactionToast(signature)
+      await accounts.refetch()
+    },
+    onError: () => {
+      toast.error('Failed to update bounty')
+    },
+  })
+
+  const deleteBounty = useMutation({
+    mutationKey: ['bounty', 'delete', { cluster }],
+    mutationFn: ({ bountyAccount }: { bountyAccount: PublicKey }) =>
+      program.methods
+        .deleteBounty()
+        .accounts({
+          signer: provider.publicKey,
+          bountyAccount,
+          owner: provider.publicKey,
+        })
+        .rpc(),
+    onSuccess: async (signature) => {
+      transactionToast(signature)
+      await accounts.refetch()
+    },
+    onError: () => {
+      toast.error('Failed to delete bounty')
+    },
+  })
+
+  const [configPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from('program_config')],
+    programId
+  )
+
+  const configQuery = useQuery({
+    queryKey: ['config', 'fetch', { cluster, configPda }],
+    queryFn: () => program.account.programConfig.fetch(configPda),
+    retry: false,
+  })
+
+  // Query to check user's token balance
+  const userTokenBalanceQuery = useQuery({
+    queryKey: ['token', 'balance', { cluster, user: provider.publicKey, mint: configQuery.data?.requiredTokenMint }],
+    queryFn: async () => {
+      if (!configQuery.data?.requiredTokenMint || !provider.publicKey) {
+        return null
+      }
+      
+      const mint = configQuery.data.requiredTokenMint
+      
+      // First check if the mint uses Token-2022 or regular SPL Token
+      const mintInfo = await connection.getAccountInfo(mint)
+      if (!mintInfo) {
+        return null
+      }
+      
+      // Check the owner to determine token program
+      const isToken2022 = mintInfo.owner.equals(new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'))
+      const tokenProgramId = isToken2022 
+        ? new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb')
+        : new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
+      
+      // Derive the associated token account
+      const [userTokenAccount] = PublicKey.findProgramAddressSync(
+        [
+          provider.publicKey.toBuffer(),
+          tokenProgramId.toBuffer(),
+          mint.toBuffer(),
+        ],
+        new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL')
+      )
+      
+      try {
+        const accountInfo = await connection.getTokenAccountBalance(userTokenAccount)
+        return accountInfo.value
+      } catch (error) {
+        // Try the other token program if the first one fails
+        const alternateTokenProgramId = isToken2022 
+          ? new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
+          : new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb')
+          
+        const [alternateTokenAccount] = PublicKey.findProgramAddressSync(
+          [
+            provider.publicKey.toBuffer(),
+            alternateTokenProgramId.toBuffer(),
+            mint.toBuffer(),
+          ],
+          new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL')
+        )
+        
+        try {
+          const alternateAccountInfo = await connection.getTokenAccountBalance(alternateTokenAccount)
+          return alternateAccountInfo.value
+        } catch {
+          // Account doesn't exist or has 0 balance
+          return null
+        }
+      }
+    },
+    enabled: !!configQuery.data?.requiredTokenMint && !!provider.publicKey,
+  })
+
   return {
     program,
     programId,
     accounts,
     getProgramAccount,
     createBounty,
+    initializeConfig,
+    updateRequiredMint,
+    updateBounty,
+    deleteBounty,
+    configQuery,
+    userTokenBalanceQuery,
   }
 }
 
