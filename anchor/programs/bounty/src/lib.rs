@@ -7,6 +7,7 @@ use anchor_spl::{
 declare_id!("vRF8A5fAANqXW8hpDvZ9gsugZKCPYhwGg5mbKffJx6P");
 
 pub const PROGRAM_CONFIG_SEED: &[u8] = b"program_config";
+pub const TREASURY_WALLET: &str = "d6DS9s7XJs4CvzBBEbdEvyW8HY2GYbfpdT23WfJP3uq";
 
 #[program]
 pub mod bounty {
@@ -31,8 +32,8 @@ pub mod bounty {
         Ok(())
     }
 
-    pub fn create_bounty(
-        ctx: Context<CreateBounty>,
+    pub fn create_bounty<'info>(
+        ctx: Context<'_, '_, '_, 'info, CreateBounty<'info>>,
         address: Pubkey,
         memo: String,
     ) -> Result<()> {
@@ -51,13 +52,18 @@ pub mod bounty {
         let transfer_cpi_accounts = TransferChecked { 
             from: ctx.accounts.user_token_account.to_account_info(),
             mint: ctx.accounts.mint.to_account_info(),
-            to: ctx.accounts.bounty_token_account.to_account_info(), 
+            to: ctx.accounts.treasury_token_account.to_account_info(), 
             authority: ctx.accounts.signer.to_account_info(),
         };
 
         let cpi_program = ctx.accounts.token_program.to_account_info(); 
 
-        let cpi_context = CpiContext::new(cpi_program, transfer_cpi_accounts); 
+        // Collect remaining accounts
+        let remaining_accounts: Vec<AccountInfo> = ctx.remaining_accounts.iter().cloned().collect();
+
+        // Create CPI context with remaining accounts for transfer hooks
+        let cpi_context = CpiContext::new(cpi_program, transfer_cpi_accounts)
+            .with_remaining_accounts(remaining_accounts);
 
         let decimals = ctx.accounts.mint.decimals; 
 
@@ -156,14 +162,18 @@ pub struct CreateBounty<'info> {
         constraint = mint.key() == program_config.required_token_mint @ ErrorCode::InvalidTokenMint
     )]
     pub mint: InterfaceAccount<'info, Mint>,
+    /// CHECK: This is the treasury wallet that will receive tokens
     #[account(
-        init_if_needed,
-        payer = signer,
+        constraint = treasury_wallet.key() == TREASURY_WALLET.parse::<Pubkey>().unwrap() @ ErrorCode::InvalidTreasury
+    )]
+    pub treasury_wallet: UncheckedAccount<'info>,
+    #[account(
+        mut,
         associated_token::mint = mint,
-        associated_token::authority = bounty_account,
+        associated_token::authority = treasury_wallet,
         associated_token::token_program = token_program
     )]
-    pub bounty_token_account: InterfaceAccount<'info, TokenAccount>,
+    pub treasury_token_account: InterfaceAccount<'info, TokenAccount>,
     #[account( 
         init_if_needed,
         payer = signer,
@@ -208,4 +218,6 @@ pub enum ErrorCode {
     Unauthorized,
     #[msg("Invalid token mint. Only the specified Token-2022 token is accepted")]
     InvalidTokenMint,
+    #[msg("Invalid treasury wallet address")]
+    InvalidTreasury,
 }

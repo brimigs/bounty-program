@@ -66,13 +66,16 @@ export type Bounty = {
           "name": "mint"
         },
         {
-          "name": "bountyTokenAccount",
+          "name": "treasuryWallet"
+        },
+        {
+          "name": "treasuryTokenAccount",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "bountyAccount"
+                "path": "treasuryWallet"
               },
               {
                 "kind": "account",
@@ -425,6 +428,11 @@ export type Bounty = {
       "code": 6001,
       "name": "invalidTokenMint",
       "msg": "Invalid token mint. Only the specified Token-2022 token is accepted"
+    },
+    {
+      "code": 6002,
+      "name": "invalidTreasury",
+      "msg": "Invalid treasury wallet address"
     }
   ],
   "types": [

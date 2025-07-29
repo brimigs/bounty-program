@@ -60,13 +60,16 @@
           "name": "mint"
         },
         {
-          "name": "bounty_token_account",
+          "name": "treasury_wallet"
+        },
+        {
+          "name": "treasury_token_account",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "bounty_account"
+                "path": "treasury_wallet"
               },
               {
                 "kind": "account",
@@ -419,6 +422,11 @@
       "code": 6001,
       "name": "InvalidTokenMint",
       "msg": "Invalid token mint. Only the specified Token-2022 token is accepted"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidTreasury",
+      "msg": "Invalid treasury wallet address"
     }
   ],
   "types": [

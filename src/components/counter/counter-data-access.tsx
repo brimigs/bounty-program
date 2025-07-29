@@ -2,7 +2,7 @@
 
 import { getCounterProgram, getCounterProgramId } from '@project/anchor'
 import { useConnection } from '@solana/wallet-adapter-react'
-import { Cluster, Keypair, PublicKey } from '@solana/web3.js'
+import { Cluster, Keypair, PublicKey, AccountMeta, AccountInfo } from '@solana/web3.js'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { useCluster } from '../cluster/cluster-data-access'
@@ -10,6 +10,26 @@ import { useAnchorProvider } from '../solana/solana-provider'
 import { useTransactionToast } from '../use-transaction-toast'
 import { toast } from 'sonner'
 import { BN } from '@coral-xyz/anchor'
+import { 
+  getExtraAccountMetaAddress, 
+  ExtraAccountMetaAccountDataLayout, 
+  resolveExtraAccountMeta, 
+  ExtraAccountMeta,
+  addExtraAccountMetasForExecute 
+} from '@solana/spl-token'
+
+export function deriveBountyTokenAccount(bountyAccount: PublicKey, mint: PublicKey): PublicKey {
+  // Derive the associated token account for the bounty
+  const [bountyTokenAccount] = PublicKey.findProgramAddressSync(
+    [
+      bountyAccount.toBuffer(),
+      new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA').toBuffer(), // Default to Token program
+      mint.toBuffer(),
+    ],
+    new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL')
+  )
+  return bountyTokenAccount
+}
 
 export function useCounterProgram() {
   const { connection } = useConnection()
@@ -52,6 +72,9 @@ export function useCounterProgram() {
         ? new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb')
         : new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
       
+      // Treasury wallet address
+      const treasuryWallet = new PublicKey('d6DS9s7XJs4CvzBBEbdEvyW8HY2GYbfpdT23WfJP3uq')
+      
       // Derive token accounts
       const [userTokenAccount] = PublicKey.findProgramAddressSync(
         [
@@ -62,14 +85,41 @@ export function useCounterProgram() {
         new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL')
       )
       
-      const [bountyTokenAccount] = PublicKey.findProgramAddressSync(
+      const [treasuryTokenAccount] = PublicKey.findProgramAddressSync(
         [
-          keypair.publicKey.toBuffer(),
+          treasuryWallet.toBuffer(),
           tokenProgramId.toBuffer(),
           mint.toBuffer(),
         ],
         new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL')
       )
+      
+      // For Token-2022 with transfer hooks, we need to fetch and add extra accounts
+      let remainingAccounts: AccountMeta[] = []
+      
+      if (isToken2022) {
+        try {
+          // Use the SPL Token helper to add all required transfer hook accounts
+          await addExtraAccountMetasForExecute(
+            connection,
+            remainingAccounts,
+            mint,
+            userTokenAccount,
+            treasuryTokenAccount,
+            provider.publicKey,
+            0, // amount doesn't matter for fetching accounts
+            'confirmed'
+          )
+          
+          console.log('Transfer hook accounts added:', remainingAccounts.length)
+          remainingAccounts.forEach((acc, i) => {
+            console.log(`  [${i}] ${acc.pubkey.toString()} (writable: ${acc.isWritable}, signer: ${acc.isSigner})`)
+          })
+        } catch (error) {
+          console.log('Error adding transfer hook accounts:', error)
+          // Continue without transfer hook accounts - the transaction will fail but with a clearer error
+        }
+      }
       
       return program.methods
         .createBounty(address, memo)
@@ -78,12 +128,14 @@ export function useCounterProgram() {
           bountyAccount: keypair.publicKey,
           programConfig: configPda,
           mint,
-          bountyTokenAccount,
+          treasuryWallet,
+          treasuryTokenAccount,
           userTokenAccount,
           tokenProgram: tokenProgramId,
           associatedTokenProgram: 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
           systemProgram: '11111111111111111111111111111111',
         })
+        .remainingAccounts(remainingAccounts)
         .signers([keypair])
         .rpc()
     },

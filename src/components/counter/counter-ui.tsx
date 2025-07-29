@@ -3,7 +3,7 @@
 import { Keypair, PublicKey } from '@solana/web3.js'
 import { useState } from 'react'
 import { ExplorerLink } from '../cluster/cluster-ui'
-import { useCounterProgram, useCounterProgramAccount } from './counter-data-access'
+import { useCounterProgram, useCounterProgramAccount, deriveBountyTokenAccount } from './counter-data-access'
 import { ellipsify } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
@@ -16,6 +16,7 @@ export function BountyCreate() {
   const [memo, setMemo] = useState('')
   const [creating, setCreating] = useState(false)
   const [addressError, setAddressError] = useState('')
+  const [nextKeypair] = useState(() => Keypair.generate())
 
   const validateAddress = (addr: string) => {
     try {
@@ -46,13 +47,14 @@ export function BountyCreate() {
     setCreating(true)
     try {
       const pubkey = new PublicKey(address)
-      await createBounty.mutateAsync({ keypair: Keypair.generate(), address: pubkey, memo })
+      await createBounty.mutateAsync({ keypair: nextKeypair, address: pubkey, memo })
       setAddress('')
       setMemo('')
     } finally {
       setCreating(false)
     }
   }
+  
 
   const isValid = address && memo && !addressError
   const hasRequiredToken = userTokenBalanceQuery.data && parseFloat(userTokenBalanceQuery.data.uiAmount || '0') >= 1
@@ -71,6 +73,7 @@ export function BountyCreate() {
           </AlertDescription>
         </Alert>
       )}
+
 
       <div className="space-y-2">
         <label className="text-sm font-semibold text-foreground">Wallet Address</label>
