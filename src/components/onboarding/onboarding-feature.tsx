@@ -8,6 +8,7 @@ import { WelcomeScreen } from './welcome-screen'
 import { TokenExtensionsExplainer } from './token-extensions-explainer'
 import { ComplianceFlowDiagram } from './compliance-flow-diagram'
 import { WorkshopOverview } from './workshop-overview'
+import { WalletOptions } from './wallet-options'
 
 export interface OnboardingStep {
   id: string
@@ -38,6 +39,11 @@ export function OnboardingFeature({ onComplete }: OnboardingFeatureProps) {
       id: 'compliance-flow',
       title: 'Compliance Flow',
       component: <ComplianceFlowDiagram />,
+    },
+    {
+      id: 'wallet-options',
+      title: 'Wallet Options',
+      component: <WalletOptions />,
     },
     {
       id: 'workshop-overview',

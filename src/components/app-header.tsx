@@ -3,14 +3,18 @@ import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, Flame } from 'lucide-react'
 import { ThemeSelect } from '@/components/theme-select'
 import { ClusterUiSelect } from './cluster/cluster-ui'
 import { WalletButton } from '@/components/solana/solana-provider'
+import { BurnerWalletFeature } from '@/components/burner-wallet/burner-wallet-feature'
+import { useWallet } from '@solana/wallet-adapter-react'
 
 export function AppHeader({ links = [] }: { links: { label: string; path: string }[] }) {
   const pathname = usePathname()
   const [showMenu, setShowMenu] = useState(false)
+  const [showBurnerWallet, setShowBurnerWallet] = useState(false)
+  const { connected } = useWallet()
 
   function isActive(path: string) {
     return path === '/' ? pathname === '/' : pathname.startsWith(path)
@@ -44,6 +48,17 @@ export function AppHeader({ links = [] }: { links: { label: string; path: string
         </Button>
 
         <div className="hidden md:flex items-center gap-4">
+          {!connected && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowBurnerWallet(true)}
+              className="flex items-center gap-2"
+            >
+              <Flame className="w-4 h-4 text-orange-500" />
+              Burner Wallet
+            </Button>
+          )}
           <WalletButton />
           <ClusterUiSelect />
           <ThemeSelect />
@@ -66,6 +81,19 @@ export function AppHeader({ links = [] }: { links: { label: string; path: string
                 ))}
               </ul>
               <div className="flex flex-col gap-4">
+                {!connected && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowBurnerWallet(true)
+                      setShowMenu(false)
+                    }}
+                    className="flex items-center gap-2 justify-center"
+                  >
+                    <Flame className="w-4 h-4 text-orange-500" />
+                    Burner Wallet
+                  </Button>
+                )}
                 <WalletButton />
                 <ClusterUiSelect />
                 <ThemeSelect />
@@ -74,6 +102,11 @@ export function AppHeader({ links = [] }: { links: { label: string; path: string
           </div>
         )}
       </div>
+      
+      <BurnerWalletFeature 
+        isOpen={showBurnerWallet} 
+        onClose={() => setShowBurnerWallet(false)} 
+      />
     </header>
   )
 }

@@ -33,9 +33,9 @@ export function WorkshopOverview() {
     {
       number: 2,
       title: 'Create Your Wallet',
-      description: 'Set up a Solana wallet and submit your address to join the workshop',
+      description: 'Set up a Solana wallet using our built-in Burner Wallet (no extension needed!) or your preferred wallet',
       icon: <Wallet className="w-5 h-5" />,
-      duration: '5 min',
+      duration: '3-5 min',
       interactive: true
     },
     {
