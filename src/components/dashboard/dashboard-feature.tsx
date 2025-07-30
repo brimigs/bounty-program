@@ -1,4 +1,10 @@
+'use client'
+
 import { AppHero } from '@/components/app-hero'
+import { OnboardingFeature } from '@/components/onboarding/onboarding-feature'
+import { useOnboarding } from '@/components/onboarding/use-onboarding'
+import { Button } from '@/components/ui/button'
+import { RefreshCw } from 'lucide-react'
 
 const links: { label: string; href: string }[] = [
   { label: 'Solana Docs', href: 'https://docs.solana.com/' },
@@ -9,10 +15,27 @@ const links: { label: string; href: string }[] = [
 ]
 
 export function DashboardFeature() {
+  const { hasCompletedOnboarding, setHasCompletedOnboarding, resetOnboarding } = useOnboarding()
+
+  if (!hasCompletedOnboarding) {
+    return <OnboardingFeature onComplete={() => setHasCompletedOnboarding(true)} />
+  }
+
   return (
     <div>
-      <AppHero title="gm" subtitle="Say hi to your new Solana app." />
+      <AppHero title="Welcome to Compliance Coin" subtitle="Your journey into Solana token compliance starts here!" />
       <div className="max-w-xl mx-auto py-6 sm:px-6 lg:px-8 text-center">
+        <div className="mb-8">
+          <Button
+            onClick={resetOnboarding}
+            variant="outline"
+            className="inline-flex items-center gap-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Replay Onboarding
+          </Button>
+        </div>
+        
         <div className="space-y-2">
           <p>Here are some helpful links to get you started.</p>
           {links.map((link, index) => (
