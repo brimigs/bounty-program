@@ -61,26 +61,12 @@ export function BountyCreate() {
 
   return (
     <div className="space-y-6">
-      {configQuery.data && !hasRequiredToken && (
-        <Alert className="border-orange-200 bg-orange-50 dark:bg-orange-950 dark:border-orange-800">
-          <AlertDescription className="text-orange-800 dark:text-orange-200">
-            <span className="font-semibold">Insufficient Balance:</span> You need at least 1{' '}
-            <ExplorerLink
-              path={`address/${configQuery.data.requiredTokenMint}`}
-              label={ellipsify(configQuery.data.requiredTokenMint.toString())}
-            />{' '}
-            token to create a bounty.
-          </AlertDescription>
-        </Alert>
-      )}
-
-
       <div className="space-y-2">
         <label className="text-sm font-semibold text-foreground">Wallet Address</label>
         <input
           className={`w-full px-4 py-2 rounded-lg border ${addressError ? 'border-destructive focus:ring-destructive' : 'border-input'} bg-background focus:outline-none focus:ring-2 focus:ring-primary transition-all`}
           type="text"
-          placeholder="Enter the uncompliant user's address"
+          placeholder="Potential sanctioned entity"
           value={address}
           onChange={handleAddressChange}
           disabled={creating || !hasRequiredToken}
@@ -93,7 +79,7 @@ export function BountyCreate() {
         <input
           className="w-full px-4 py-2 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary transition-all"
           type="text"
-          placeholder="Add a description for this bounty"
+          placeholder="Explain your reasoning here"
           value={memo}
           onChange={(e) => setMemo(e.target.value)}
           disabled={creating || !hasRequiredToken}
