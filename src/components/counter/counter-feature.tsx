@@ -5,16 +5,34 @@ import { WalletButton } from '../solana/solana-provider'
 import { ExplorerLink } from '../cluster/cluster-ui'
 import { useCounterProgram } from './counter-data-access'
 import { BountyCreate, BountyList, ConfigInitialize, ConfigUpdate, BurnTokens } from './counter-ui'
+import { InvestigationDashboard } from './investigation-dashboard'
 import { AppHero } from '../app-hero'
 import { ellipsify } from '@/lib/utils'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Info, Settings, Shield } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { 
+  Info, 
+  Settings, 
+  Shield, 
+  ExternalLink, 
+  Search,
+  AlertTriangle,
+  Trophy,
+  Activity,
+  FileSearch,
+  Target,
+  TrendingUp,
+  Users,
+  Clock
+} from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 export default function CounterFeature() {
   const { publicKey } = useWallet()
   const { programId, configQuery, userTokenBalanceQuery } = useCounterProgram()
+  const router = useRouter()
   
   const hasRequiredToken = userTokenBalanceQuery.data && parseFloat(String(userTokenBalanceQuery.data.uiAmount || '0')) >= 1
 
@@ -49,6 +67,17 @@ export default function CounterFeature() {
             >
               For more information on the Compliance Coin, please visit the block explorer.
             </a>
+            
+            <div className="mt-12 flex justify-center">
+              <Button
+                onClick={() => router.push('/allowlist-request')}
+                size="lg"
+                className="flex items-center gap-2"
+              >
+                <ExternalLink className="w-5 h-5" />
+                Allowlist Request
+              </Button>
+            </div>
           </div>
           </div>
         </div>
@@ -85,11 +114,15 @@ export default function CounterFeature() {
               </TabsList>
               
               <TabsContent value="bounties" className="space-y-8 mt-0">
+                {/* Investigation Dashboard */}
+                <InvestigationDashboard />
+                
+                {/* Bounty Submission Section */}
                 <Card className="border-2 shadow-lg">
                   <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/5">
-                    <CardTitle className="text-3xl">Create New Bounty</CardTitle>
+                    <CardTitle className="text-3xl">Submit Your Findings</CardTitle>
                     <CardDescription className="text-base">
-                      Submit a new bounty by entering a public key address and memo. 
+                      Found the sanctioned entity? Submit the address and supporting evidence. 
                       <span className="font-semibold text-primary"> It costs 1 token to submit.</span>
                     </CardDescription>
                   </CardHeader>
@@ -98,8 +131,9 @@ export default function CounterFeature() {
                   </CardContent>
                 </Card>
                 
+                {/* Previous Submissions */}
                 <div>
-                  <h2 className="text-2xl font-bold mb-6 text-center">Active Bounties</h2>
+                  <h2 className="text-2xl font-bold mb-6 text-center">Investigation History</h2>
                   <BountyList />
                 </div>
               </TabsContent>

@@ -12,6 +12,7 @@ export const metadata: Metadata = {
 const links: { label: string; path: string }[] = [
   // More links...
   { label: 'Account', path: '/account' },
+  { label: 'Allowlist Request', path: '/allowlist-request' },
   { label: 'Bounty Program', path: '/counter' },
 ]
 
