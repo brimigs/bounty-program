@@ -2,7 +2,7 @@
 
 import { getCounterProgram, getCounterProgramId } from '@project/anchor'
 import { useConnection } from '@solana/wallet-adapter-react'
-import { Cluster, Keypair, PublicKey, AccountMeta, AccountInfo } from '@solana/web3.js'
+import { Cluster, Keypair, PublicKey, AccountMeta } from '@solana/web3.js'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { useCluster } from '../cluster/cluster-data-access'
@@ -11,11 +11,8 @@ import { useTransactionToast } from '../use-transaction-toast'
 import { toast } from 'sonner'
 import { BN } from '@coral-xyz/anchor'
 import { 
-  getExtraAccountMetaAddress, 
   ExtraAccountMetaAccountDataLayout, 
-  resolveExtraAccountMeta, 
-  ExtraAccountMeta,
-  addExtraAccountMetasForExecute 
+  resolveExtraAccountMeta 
 } from '@solana/spl-token'
 
 export function deriveBountyTokenAccount(bountyAccount: PublicKey, mint: PublicKey): PublicKey {
@@ -75,49 +72,39 @@ export function useCounterProgram() {
       // Treasury wallet address
       const treasuryWallet = new PublicKey('d6DS9s7XJs4CvzBBEbdEvyW8HY2GYbfpdT23WfJP3uq')
       
-      // Derive token accounts
-      const [userTokenAccount] = PublicKey.findProgramAddressSync(
-        [
-          provider.publicKey.toBuffer(),
-          tokenProgramId.toBuffer(),
-          mint.toBuffer(),
-        ],
-        new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL')
-      )
       
-      const [treasuryTokenAccount] = PublicKey.findProgramAddressSync(
-        [
-          treasuryWallet.toBuffer(),
-          tokenProgramId.toBuffer(),
-          mint.toBuffer(),
-        ],
-        new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL')
-      )
       
       // For Token-2022 with transfer hooks, we need to fetch and add extra accounts
-      let remainingAccounts: AccountMeta[] = []
+      const remainingAccounts: AccountMeta[] = []
       
       if (isToken2022) {
         try {
-          // Use the SPL Token helper to add all required transfer hook accounts
-          await addExtraAccountMetasForExecute(
-            connection,
-            remainingAccounts,
-            mint,
-            userTokenAccount,
-            treasuryTokenAccount,
-            provider.publicKey,
-            0, // amount doesn't matter for fetching accounts
-            'confirmed'
+          // Get extra account metas if transfer hooks are enabled
+          const [extraAccountMetaPDA] = PublicKey.findProgramAddressSync(
+            [Buffer.from('extra-account-metas'), mint.toBuffer()],
+            new PublicKey('7EWJHhmCttWpjqEUNmqGaW7bQWebnFfwNen7WXGxk5dV') // Transfer Hook Interface
           )
           
-          console.log('Transfer hook accounts added:', remainingAccounts.length)
-          remainingAccounts.forEach((acc, i) => {
-            console.log(`  [${i}] ${acc.pubkey.toString()} (writable: ${acc.isWritable}, signer: ${acc.isSigner})`)
-          })
-        } catch (error) {
-          console.log('Error adding transfer hook accounts:', error)
-          // Continue without transfer hook accounts - the transaction will fail but with a clearer error
+          const extraAccountInfo = await connection.getAccountInfo(extraAccountMetaPDA)
+          if (extraAccountInfo && extraAccountInfo.data.length > 0) {
+            const extraAccountMetas = ExtraAccountMetaAccountDataLayout.decode(extraAccountInfo.data)
+            
+            // Resolve PDAs for transfer instruction (discriminator: 163, 52, 200, 231, 140, 3, 69, 186)
+            const transferDiscriminator = Buffer.from([163, 52, 200, 231, 140, 3, 69, 186])
+            
+            for (const extraMeta of extraAccountMetas.extraAccountsList.extraAccounts) {
+              const resolvedMeta = await resolveExtraAccountMeta(
+                connection,
+                extraMeta,
+                [], // Empty array for now - we'll need to fix this based on the transfer hook requirements
+                transferDiscriminator,
+                programId
+              )
+              remainingAccounts.push(resolvedMeta)
+            }
+          }
+        } catch {
+          console.log('No transfer hook extra accounts needed')
         }
       }
       
@@ -126,14 +113,9 @@ export function useCounterProgram() {
         .accounts({
           signer: provider.publicKey,
           bountyAccount: keypair.publicKey,
-          programConfig: configPda,
           mint,
           treasuryWallet,
-          treasuryTokenAccount,
-          userTokenAccount,
           tokenProgram: tokenProgramId,
-          associatedTokenProgram: 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
-          systemProgram: '11111111111111111111111111111111',
         })
         .remainingAccounts(remainingAccounts)
         .signers([keypair])
@@ -151,16 +133,10 @@ export function useCounterProgram() {
   const initializeConfig = useMutation({
     mutationKey: ['config', 'initialize', { cluster }],
     mutationFn: ({ requiredTokenMint }: { requiredTokenMint: PublicKey }) => {
-      const [configPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from('program_config')],
-        programId
-      )
       return program.methods
         .initializeConfig(requiredTokenMint)
         .accounts({
           authority: provider.publicKey,
-          programConfig: configPda,
-          systemProgram: '11111111111111111111111111111111',
         })
         .rpc()
     },
@@ -168,7 +144,7 @@ export function useCounterProgram() {
       transactionToast(signature)
       toast.success('Config initialized successfully')
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(`Failed to initialize config: ${error.message}`)
     },
   })
@@ -176,15 +152,10 @@ export function useCounterProgram() {
   const updateRequiredMint = useMutation({
     mutationKey: ['config', 'update-mint', { cluster }],
     mutationFn: ({ newMint }: { newMint: PublicKey }) => {
-      const [configPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from('program_config')],
-        programId
-      )
       return program.methods
         .updateRequiredMint(newMint)
         .accounts({
           authority: provider.publicKey,
-          programConfig: configPda,
         })
         .rpc()
     },
@@ -193,7 +164,7 @@ export function useCounterProgram() {
       toast.success('Required mint updated successfully')
       await configQuery.refetch()
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(`Failed to update required mint: ${error.message}`)
     },
   })
@@ -206,7 +177,6 @@ export function useCounterProgram() {
         .accounts({
           signer: provider.publicKey,
           bountyAccount,
-          owner: provider.publicKey,
         })
         .rpc(),
     onSuccess: async (signature) => {
@@ -226,7 +196,6 @@ export function useCounterProgram() {
         .accounts({
           signer: provider.publicKey,
           bountyAccount,
-          owner: provider.publicKey,
         })
         .rpc(),
     onSuccess: async (signature) => {
@@ -235,6 +204,85 @@ export function useCounterProgram() {
     },
     onError: () => {
       toast.error('Failed to delete bounty')
+    },
+  })
+
+  const burnTokens = useMutation({
+    mutationKey: ['token', 'burn', { cluster }],
+    mutationFn: async ({ targetWallet, amount }: { targetWallet: PublicKey; amount: number }) => {
+      const [configPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from('program_config')],
+        programId
+      )
+      
+      const config = await program.account.programConfig.fetch(configPda)
+      const mint = config.requiredTokenMint
+      
+      // Check if the mint uses Token-2022
+      const mintInfo = await connection.getAccountInfo(mint)
+      if (!mintInfo) {
+        throw new Error('Mint account not found')
+      }
+      
+      const isToken2022 = mintInfo.owner.equals(new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'))
+      const tokenProgramId = isToken2022 
+        ? new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb')
+        : new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
+      
+      
+      // For Token-2022 with transfer hooks, we need to fetch and add extra accounts
+      const remainingAccounts: AccountMeta[] = []
+      
+      if (isToken2022) {
+        try {
+          // Get extra account metas if transfer hooks are enabled
+          const [extraAccountMetaPDA] = PublicKey.findProgramAddressSync(
+            [Buffer.from('extra-account-metas'), mint.toBuffer()],
+            new PublicKey('7EWJHhmCttWpjqEUNmqGaW7bQWebnFfwNen7WXGxk5dV') // Transfer Hook Interface
+          )
+          
+          const extraAccountInfo = await connection.getAccountInfo(extraAccountMetaPDA)
+          if (extraAccountInfo && extraAccountInfo.data.length > 0) {
+            const extraAccountMetas = ExtraAccountMetaAccountDataLayout.decode(extraAccountInfo.data)
+            
+            // Resolve PDAs for burn instruction (discriminator: 116, 110, 29, 56, 107, 219, 42, 137)
+            const burnDiscriminator = Buffer.from([116, 110, 29, 56, 107, 219, 42, 137])
+            
+            for (const extraMeta of extraAccountMetas.extraAccountsList.extraAccounts) {
+              const resolvedMeta = await resolveExtraAccountMeta(
+                connection,
+                extraMeta,
+                [], // Empty array for now - we'll need to fix this based on the transfer hook requirements
+                burnDiscriminator,
+                programId
+              )
+              remainingAccounts.push(resolvedMeta)
+            }
+          }
+        } catch {
+          console.log('No transfer hook extra accounts needed for burn')
+        }
+      }
+      
+      return program.methods
+        .burnTokens(new BN(amount))
+        .accountsPartial({
+          authority: provider.publicKey,
+          mint,
+          targetWallet,
+          tokenProgram: tokenProgramId,
+        })
+        .remainingAccounts(remainingAccounts)
+        .rpc()
+    },
+    onSuccess: async (signature) => {
+      transactionToast(signature)
+      toast.success('Token burned successfully')
+      await userTokenBalanceQuery.refetch()
+    },
+    onError: (error: Error) => {
+      console.error('Burn error:', error)
+      toast.error(`Failed to burn token: ${error.message || 'Unknown error'}`)
     },
   })
 
@@ -284,7 +332,7 @@ export function useCounterProgram() {
       try {
         const accountInfo = await connection.getTokenAccountBalance(userTokenAccount)
         return accountInfo.value
-      } catch (error) {
+      } catch {
         // Try the other token program if the first one fails
         const alternateTokenProgramId = isToken2022 
           ? new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
@@ -321,6 +369,7 @@ export function useCounterProgram() {
     updateRequiredMint,
     updateBounty,
     deleteBounty,
+    burnTokens,
     configQuery,
     userTokenBalanceQuery,
   }

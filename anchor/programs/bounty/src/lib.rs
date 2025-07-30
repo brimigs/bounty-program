@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{self, Mint, TokenAccount, TokenInterface, TransferChecked},
+    token_interface::{self, Mint, TokenAccount, TokenInterface, TransferChecked, Burn},
 };
 
 declare_id!("vRF8A5fAANqXW8hpDvZ9gsugZKCPYhwGg5mbKffJx6P");
@@ -93,6 +93,35 @@ pub mod bounty {
         let bounty = &ctx.accounts.bounty_account;
         require!(bounty.owner == ctx.accounts.signer.key(), ErrorCode::Unauthorized);
         
+        Ok(())
+    }
+
+    pub fn burn_tokens<'info>(
+        ctx: Context<'_, '_, '_, 'info, BurnTokens<'info>>,
+        amount: u64,
+    ) -> Result<()> {
+        // Ensure only the program authority can burn tokens
+        require!(
+            ctx.accounts.authority.key() == ctx.accounts.program_config.authority,
+            ErrorCode::Unauthorized
+        );
+
+        let burn_cpi_accounts = Burn {
+            mint: ctx.accounts.mint.to_account_info(),
+            from: ctx.accounts.target_token_account.to_account_info(),
+            authority: ctx.accounts.mint.to_account_info(), // Mint is the permanent delegate
+        };
+
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+        
+        // Collect remaining accounts for transfer hooks if needed
+        let remaining_accounts: Vec<AccountInfo> = ctx.remaining_accounts.iter().cloned().collect();
+        
+        let cpi_context = CpiContext::new(cpi_program, burn_cpi_accounts)
+            .with_remaining_accounts(remaining_accounts);
+
+        token_interface::burn(cpi_context, amount)?;
+
         Ok(())
     }
 }
@@ -210,6 +239,31 @@ pub struct DeleteBounty<'info> {
     )]
     pub bounty_account: Account<'info, BountyInfo>,
     pub owner: SystemAccount<'info>,
+}
+
+#[derive(Accounts)]
+pub struct BurnTokens<'info> {
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    #[account(
+        seeds = [PROGRAM_CONFIG_SEED],
+        bump,
+        has_one = authority @ ErrorCode::Unauthorized
+    )]
+    pub program_config: Account<'info, ProgramConfig>,
+    #[account(mut)]
+    pub mint: InterfaceAccount<'info, Mint>,
+    /// CHECK: The wallet that holds tokens to be burned
+    pub target_wallet: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = target_wallet,
+        associated_token::token_program = token_program
+    )]
+    pub target_token_account: InterfaceAccount<'info, TokenAccount>,
+    pub token_program: Interface<'info, TokenInterface>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
 #[error_code]

@@ -103,10 +103,10 @@ async function main() {
     console.log('Transaction signature:', signature);
     console.log('AB wallet initialized successfully with Allow status!');
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error:', error);
-    if (error.logs) {
-      console.error('Transaction logs:', error.logs);
+    if (error instanceof Error && 'logs' in error) {
+      console.error('Transaction logs:', (error as any).logs);
     }
   }
 }

@@ -1,10 +1,4 @@
-/**
- * Program IDL in camelCase format in order to be used in JS/TS.
- *
- * Note that this is only a type helper and is not the actual IDL. The original
- * IDL can be found at `target/idl/bounty.json`.
- */
-export type Bounty = {
+export default {
   "address": "vRF8A5fAANqXW8hpDvZ9gsugZKCPYhwGg5mbKffJx6P",
   "metadata": {
     "name": "bounty",
@@ -14,7 +8,7 @@ export type Bounty = {
   },
   "instructions": [
     {
-      "name": "burnTokens",
+      "name": "burn_tokens",
       "discriminator": [
         76,
         15,
@@ -31,11 +25,11 @@ export type Bounty = {
           "writable": true,
           "signer": true,
           "relations": [
-            "programConfig"
+            "program_config"
           ]
         },
         {
-          "name": "programConfig",
+          "name": "program_config",
           "pda": {
             "seeds": [
               {
@@ -65,20 +59,20 @@ export type Bounty = {
           "writable": true
         },
         {
-          "name": "targetWallet"
+          "name": "target_wallet"
         },
         {
-          "name": "targetTokenAccount",
+          "name": "target_token_account",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "targetWallet"
+                "path": "target_wallet"
               },
               {
                 "kind": "account",
-                "path": "tokenProgram"
+                "path": "token_program"
               },
               {
                 "kind": "account",
@@ -125,10 +119,10 @@ export type Bounty = {
           }
         },
         {
-          "name": "tokenProgram"
+          "name": "token_program"
         },
         {
-          "name": "associatedTokenProgram",
+          "name": "associated_token_program",
           "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         }
       ],
@@ -140,7 +134,7 @@ export type Bounty = {
       ]
     },
     {
-      "name": "createBounty",
+      "name": "create_bounty",
       "discriminator": [
         122,
         90,
@@ -158,12 +152,12 @@ export type Bounty = {
           "signer": true
         },
         {
-          "name": "bountyAccount",
+          "name": "bounty_account",
           "writable": true,
           "signer": true
         },
         {
-          "name": "programConfig",
+          "name": "program_config",
           "pda": {
             "seeds": [
               {
@@ -192,20 +186,20 @@ export type Bounty = {
           "name": "mint"
         },
         {
-          "name": "treasuryWallet"
+          "name": "treasury_wallet"
         },
         {
-          "name": "treasuryTokenAccount",
+          "name": "treasury_token_account",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "treasuryWallet"
+                "path": "treasury_wallet"
               },
               {
                 "kind": "account",
-                "path": "tokenProgram"
+                "path": "token_program"
               },
               {
                 "kind": "account",
@@ -252,7 +246,7 @@ export type Bounty = {
           }
         },
         {
-          "name": "userTokenAccount",
+          "name": "user_token_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -262,7 +256,7 @@ export type Bounty = {
               },
               {
                 "kind": "account",
-                "path": "tokenProgram"
+                "path": "token_program"
               },
               {
                 "kind": "account",
@@ -309,14 +303,14 @@ export type Bounty = {
           }
         },
         {
-          "name": "tokenProgram"
+          "name": "token_program"
         },
         {
-          "name": "associatedTokenProgram",
+          "name": "associated_token_program",
           "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         },
         {
-          "name": "systemProgram",
+          "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -332,7 +326,7 @@ export type Bounty = {
       ]
     },
     {
-      "name": "deleteBounty",
+      "name": "delete_bounty",
       "discriminator": [
         43,
         167,
@@ -350,20 +344,20 @@ export type Bounty = {
           "signer": true
         },
         {
-          "name": "bountyAccount",
+          "name": "bounty_account",
           "writable": true
         },
         {
           "name": "owner",
           "relations": [
-            "bountyAccount"
+            "bounty_account"
           ]
         }
       ],
       "args": []
     },
     {
-      "name": "initializeConfig",
+      "name": "initialize_config",
       "discriminator": [
         208,
         127,
@@ -381,7 +375,7 @@ export type Bounty = {
           "signer": true
         },
         {
-          "name": "programConfig",
+          "name": "program_config",
           "writable": true,
           "pda": {
             "seeds": [
@@ -408,19 +402,19 @@ export type Bounty = {
           }
         },
         {
-          "name": "systemProgram",
+          "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
         {
-          "name": "requiredTokenMint",
+          "name": "required_token_mint",
           "type": "pubkey"
         }
       ]
     },
     {
-      "name": "updateBounty",
+      "name": "update_bounty",
       "discriminator": [
         162,
         254,
@@ -438,13 +432,13 @@ export type Bounty = {
           "signer": true
         },
         {
-          "name": "bountyAccount",
+          "name": "bounty_account",
           "writable": true
         },
         {
           "name": "owner",
           "relations": [
-            "bountyAccount"
+            "bounty_account"
           ]
         }
       ],
@@ -460,7 +454,7 @@ export type Bounty = {
       ]
     },
     {
-      "name": "updateRequiredMint",
+      "name": "update_required_mint",
       "discriminator": [
         2,
         203,
@@ -477,11 +471,11 @@ export type Bounty = {
           "writable": true,
           "signer": true,
           "relations": [
-            "programConfig"
+            "program_config"
           ]
         },
         {
-          "name": "programConfig",
+          "name": "program_config",
           "writable": true,
           "pda": {
             "seeds": [
@@ -510,7 +504,7 @@ export type Bounty = {
       ],
       "args": [
         {
-          "name": "newMint",
+          "name": "new_mint",
           "type": "pubkey"
         }
       ]
@@ -518,7 +512,7 @@ export type Bounty = {
   ],
   "accounts": [
     {
-      "name": "bountyInfo",
+      "name": "BountyInfo",
       "discriminator": [
         233,
         22,
@@ -531,7 +525,7 @@ export type Bounty = {
       ]
     },
     {
-      "name": "programConfig",
+      "name": "ProgramConfig",
       "discriminator": [
         196,
         210,
@@ -547,23 +541,23 @@ export type Bounty = {
   "errors": [
     {
       "code": 6000,
-      "name": "unauthorized",
+      "name": "Unauthorized",
       "msg": "Unauthorized access"
     },
     {
       "code": 6001,
-      "name": "invalidTokenMint",
+      "name": "InvalidTokenMint",
       "msg": "Invalid token mint. Only the specified Token-2022 token is accepted"
     },
     {
       "code": 6002,
-      "name": "invalidTreasury",
+      "name": "InvalidTreasury",
       "msg": "Invalid treasury wallet address"
     }
   ],
   "types": [
     {
-      "name": "bountyInfo",
+      "name": "BountyInfo",
       "type": {
         "kind": "struct",
         "fields": [
@@ -580,18 +574,18 @@ export type Bounty = {
             "type": "string"
           },
           {
-            "name": "createdAt",
+            "name": "created_at",
             "type": "i64"
           },
           {
-            "name": "updatedAt",
+            "name": "updated_at",
             "type": "i64"
           }
         ]
       }
     },
     {
-      "name": "programConfig",
+      "name": "ProgramConfig",
       "type": {
         "kind": "struct",
         "fields": [
@@ -600,11 +594,11 @@ export type Bounty = {
             "type": "pubkey"
           },
           {
-            "name": "requiredTokenMint",
+            "name": "required_token_mint",
             "type": "pubkey"
           }
         ]
       }
     }
   ]
-};
+} as const;

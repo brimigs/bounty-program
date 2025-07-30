@@ -17,10 +17,10 @@ async function main() {
   console.log('Extra Account Metas Data:');
   console.log('Instruction discriminator:', decoded.instructionDiscriminator);
   console.log('Length:', decoded.length);
-  console.log('Extra accounts count:', decoded.extraAccountsList.length);
+  console.log('Extra accounts count:', decoded.extraAccountsList.extraAccounts.length);
   
   // Access the metas array directly
-  const metas = decoded.extraAccountsList;
+  const metas = decoded.extraAccountsList.extraAccounts;
   metas.forEach((meta: any, index: number) => {
     console.log(`\n[${index}]`);
     console.log('  Discriminator:', meta.discriminator);

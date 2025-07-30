@@ -4,7 +4,7 @@ import { useWallet } from '@solana/wallet-adapter-react'
 import { WalletButton } from '../solana/solana-provider'
 import { ExplorerLink } from '../cluster/cluster-ui'
 import { useCounterProgram } from './counter-data-access'
-import { BountyCreate, BountyList, ConfigInitialize, ConfigUpdate } from './counter-ui'
+import { BountyCreate, BountyList, ConfigInitialize, ConfigUpdate, BurnTokens } from './counter-ui'
 import { AppHero } from '../app-hero'
 import { ellipsify } from '@/lib/utils'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -16,7 +16,7 @@ export default function CounterFeature() {
   const { publicKey } = useWallet()
   const { programId, configQuery, userTokenBalanceQuery } = useCounterProgram()
   
-  const hasRequiredToken = userTokenBalanceQuery.data && parseFloat(userTokenBalanceQuery.data.uiAmount || '0') >= 1
+  const hasRequiredToken = userTokenBalanceQuery.data && parseFloat(String(userTokenBalanceQuery.data.uiAmount || '0')) >= 1
 
   return publicKey ? (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
@@ -155,7 +155,12 @@ export default function CounterFeature() {
                   <CardContent className="pt-6">
                     <div className="space-y-6">
                       {!configQuery.data && <ConfigInitialize />}
-                      {configQuery.data && <ConfigUpdate />}
+                      {configQuery.data && (
+                        <>
+                          <ConfigUpdate />
+                          <BurnTokens />
+                        </>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

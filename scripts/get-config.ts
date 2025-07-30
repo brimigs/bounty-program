@@ -16,7 +16,7 @@ async function main() {
     { commitment: 'confirmed' }
   );
   
-  const program = new Program(IDL as any, PROGRAM_ID, provider);
+  const program = new Program(IDL as any, provider);
   
   // Derive the config PDA
   const [configPda] = PublicKey.findProgramAddressSync(
@@ -33,8 +33,8 @@ async function main() {
     // Export for use in other script
     process.env.MINT_ADDRESS = config.requiredTokenMint.toString();
     
-  } catch (error: any) {
-    console.error('Error fetching config:', error.message);
+  } catch (error) {
+    console.error('Error fetching config:', error instanceof Error ? error.message : 'Unknown error');
     console.log('Config may not be initialized yet');
   }
 }

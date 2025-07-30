@@ -3,15 +3,14 @@
 import { Keypair, PublicKey } from '@solana/web3.js'
 import { useState } from 'react'
 import { ExplorerLink } from '../cluster/cluster-ui'
-import { useCounterProgram, useCounterProgramAccount, deriveBountyTokenAccount } from './counter-data-access'
+import { useCounterProgram, useCounterProgramAccount } from './counter-data-access'
 import { ellipsify } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export function BountyCreate() {
-  const { createBounty, configQuery, userTokenBalanceQuery } = useCounterProgram()
+  const { createBounty, userTokenBalanceQuery } = useCounterProgram()
   const [address, setAddress] = useState('')
   const [memo, setMemo] = useState('')
   const [creating, setCreating] = useState(false)
@@ -57,7 +56,7 @@ export function BountyCreate() {
   
 
   const isValid = address && memo && !addressError
-  const hasRequiredToken = userTokenBalanceQuery.data && parseFloat(userTokenBalanceQuery.data.uiAmount || '0') >= 1
+  const hasRequiredToken = userTokenBalanceQuery.data && parseFloat(String(userTokenBalanceQuery.data.uiAmount || '0')) >= 1
 
   return (
     <div className="space-y-6">
@@ -261,6 +260,86 @@ export function ConfigUpdate() {
         </div>
         <Button onClick={handleUpdate} disabled={updating || !newMint || !!mintError}>
           Update{updating && '...'}
+        </Button>
+      </CardContent>
+    </Card>
+  )
+}
+
+export function BurnTokens() {
+  const { burnTokens } = useCounterProgram()
+  const [targetWallet, setTargetWallet] = useState('')
+  const [burning, setBurning] = useState(false)
+  const [walletError, setWalletError] = useState('')
+
+  const validateWallet = (addr: string) => {
+    try {
+      new PublicKey(addr)
+      setWalletError('')
+      return true
+    } catch {
+      setWalletError('Invalid wallet address format')
+      return false
+    }
+  }
+
+  const handleWalletChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setTargetWallet(value)
+    if (value) {
+      validateWallet(value)
+    } else {
+      setWalletError('')
+    }
+  }
+
+  const handleBurn = async () => {
+    if (!validateWallet(targetWallet)) {
+      return
+    }
+
+    setBurning(true)
+    try {
+      const wallet = new PublicKey(targetWallet)
+      await burnTokens.mutateAsync({ targetWallet: wallet, amount: 1 })
+      setTargetWallet('')
+    } finally {
+      setBurning(false)
+    }
+  }
+
+  return (
+    <Card className="border-red-200 dark:border-red-800">
+      <CardHeader>
+        <CardTitle className="text-red-600 dark:text-red-400">Burn Tokens</CardTitle>
+        <CardDescription>
+          Use the permanent delegate to burn tokens from any wallet address
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Alert className="border-red-200 bg-red-50 dark:bg-red-950 dark:border-red-800">
+          <AlertDescription className="text-red-800 dark:text-red-200">
+            <span className="font-semibold">Warning:</span> This action will permanently burn 1 token from the specified wallet.
+          </AlertDescription>
+        </Alert>
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium">Target Wallet Address</label>
+          <input
+            className={`input input-bordered ${walletError ? 'input-error' : ''}`}
+            type="text"
+            placeholder="Enter wallet address to burn from"
+            value={targetWallet}
+            onChange={handleWalletChange}
+            disabled={burning}
+          />
+          {walletError && <span className="text-error text-sm">{walletError}</span>}
+        </div>
+        <Button 
+          onClick={handleBurn} 
+          disabled={burning || !targetWallet || !!walletError}
+          variant="destructive"
+        >
+          {burning ? 'Burning...' : 'Burn 1 Token'}
         </Button>
       </CardContent>
     </Card>

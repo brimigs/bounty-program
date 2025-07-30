@@ -88,7 +88,7 @@ async function main() {
   anchor.setProvider(provider);
 
   // Create program interface
-  const program = new anchor.Program(IDL as any, TRANSFER_HOOK_PROGRAM, provider);
+  const program = new anchor.Program(IDL as any, provider);
 
   try {
     // Get the mint address from config or args
