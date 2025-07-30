@@ -8,9 +8,6 @@ import { ConfigInitialize, ConfigUpdate, BurnTokens } from './counter-ui'
 import { InvestigationDashboard } from './investigation-dashboard'
 import { BountySubmissionForm } from './bounty-submission-form'
 import { InvestigationHistory } from './investigation-history'
-import { TechnicalChallenges } from './technical-challenges'
-import { CryptoPuzzle } from './crypto-puzzle'
-import { LiveTransactionMonitor } from './live-transaction-monitor'
 import { AppHero } from '../app-hero'
 import { ellipsify } from '@/lib/utils'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -113,15 +110,6 @@ export default function CounterFeature() {
                 {/* Investigation Dashboard */}
                 <InvestigationDashboard />
                 
-                {/* Live Transaction Monitor */}
-                <LiveTransactionMonitor />
-                
-                {/* Technical Challenges */}
-                <TechnicalChallenges />
-                
-                {/* Cryptographic Puzzle */}
-                <CryptoPuzzle />
-                
                 {/* Bounty Submission Section */}
                 <Card className="border-2 shadow-lg">
                   <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/5">
@@ -136,9 +124,9 @@ export default function CounterFeature() {
                   </CardContent>
                 </Card>
                 
-                {/* Investigation History */}
+                {/* Current Active Bounties */}
                 <div>
-                  <h2 className="text-2xl font-bold mb-6 text-center">Investigation History</h2>
+                  <h2 className="text-2xl font-bold mb-6 text-center">Current Active Bounties</h2>
                   <InvestigationHistory />
                 </div>
               </TabsContent>

@@ -18,7 +18,8 @@ import {
   User,
   FileText,
   TrendingUp,
-  Search
+  Search,
+  Trash2
 } from 'lucide-react'
 
 interface InvestigationStatus {
@@ -198,11 +199,22 @@ export function InvestigationHistory() {
 
 function InvestigationCard({ account }: { account: PublicKey }) {
   const { accountQuery } = useCounterProgramAccount({ account })
+  const { deleteBounty } = useCounterProgram()
   const investigation = accountQuery.data
   const [isExpanded, setIsExpanded] = useState(false)
 
   // For demo purposes, assign random status
   const status = statusMap.pending
+
+  const handleDelete = async () => {
+    if (confirm('Are you sure you want to delete this investigation?')) {
+      try {
+        await deleteBounty.mutateAsync({ bountyAccount: account })
+      } catch (error) {
+        console.error('Delete failed:', error)
+      }
+    }
+  }
 
   if (!investigation) {
     return (
@@ -237,13 +249,23 @@ function InvestigationCard({ account }: { account: PublicKey }) {
               Investigator: {ellipsify(investigation.owner.toString())}
             </CardDescription>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            {isExpanded ? 'Show Less' : 'Show More'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsExpanded(!isExpanded)}
+            >
+              {isExpanded ? 'Show Less' : 'Show More'}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDelete}
+              className="text-destructive hover:text-destructive"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
