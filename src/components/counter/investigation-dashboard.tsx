@@ -2,18 +2,9 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { 
   Search, 
-  ExternalLink, 
-  FileSearch, 
-  AlertTriangle,
-  Trophy,
-  Clock,
-  Activity,
-  TrendingUp,
-  Info,
+  ExternalLink,
   ArrowRight
 } from 'lucide-react'
 
@@ -30,125 +21,41 @@ export function InvestigationDashboard() {
 
   const investigationTools: InvestigationTool[] = [
     {
-      title: 'Token Transaction Explorer',
-      description: 'View all transactions for Compliance Coin',
+      title: 'Token Information',
+      description: 'View all token information, transactions, and holders on Solscan',
       icon: <Search className="w-5 h-5" />,
-      action: () => window.open(`https://solscan.io/token/${COMPLIANCE_COIN_MINT}?cluster=devnet#txs`, '_blank'),
-      actionLabel: 'Open Explorer'
-    },
-    {
-      title: 'Token Holders List',
-      description: 'See all addresses holding Compliance Coin',
-      icon: <FileSearch className="w-5 h-5" />,
-      action: () => window.open(`https://solscan.io/token/${COMPLIANCE_COIN_MINT}?cluster=devnet#holders`, '_blank'),
-      actionLabel: 'View Holders'
-    },
-    {
-      title: 'Recent Transfers',
-      description: 'Track recent token movements and memos',
-      icon: <Activity className="w-5 h-5" />,
-      action: () => window.open(`https://solscan.io/token/${COMPLIANCE_COIN_MINT}?cluster=devnet#txs`, '_blank'),
-      actionLabel: 'View Transfers'
-    },
-    {
-      title: 'Known Sanctioned Entities',
-      description: 'Reference list of flagged addresses',
-      icon: <AlertTriangle className="w-5 h-5" />,
-      action: () => window.open('https://sanctionssearch.ofac.treas.gov/', '_blank'),
-      actionLabel: 'OFAC List'
+      action: () => window.open(`https://solscan.io/token/${COMPLIANCE_COIN_MINT}?cluster=devnet`, '_blank'),
+      actionLabel: 'Open Block Explorer'
     }
   ]
 
   return (
     <div className="space-y-6">
-      {/* Mission Brief */}
-      <Card className="border-2 border-orange-500 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-2xl flex items-center gap-2">
-              <AlertTriangle className="w-6 h-6 text-orange-600" />
-              Active Mission: Find the Sanctioned Entity
-            </CardTitle>
-            <Badge className="bg-red-600 text-white animate-pulse">
-              <Clock className="w-3 h-3 mr-1" />
-              URGENT
-            </Badge>
-          </div>
-          <CardDescription className="text-base mt-2">
-            Tokens have been traced to a sanctioned entity. Use the investigation tools below to track transactions 
-            and identify the compromised address through memo analysis.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <Trophy className="w-4 h-4 text-yellow-500" />
-                <p className="text-sm font-medium">Reward</p>
-              </div>
-              <p className="text-lg font-bold">Bounty Tokens</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <Activity className="w-4 h-4 text-blue-500" />
-                <p className="text-sm font-medium">Status</p>
-              </div>
-              <p className="text-lg font-bold text-green-600">Active Hunt</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <TrendingUp className="w-4 h-4 text-purple-500" />
-                <p className="text-sm font-medium">Submissions</p>
-              </div>
-              <p className="text-lg font-bold">0 Verified</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Investigation Hints */}
-      <Alert className="border-blue-500 bg-blue-50 dark:bg-blue-950/20">
-        <Info className="w-4 h-4" />
-        <AlertDescription>
-          <strong>Investigation Tips:</strong>
-          <ul className="mt-2 space-y-1 text-sm">
-            <li>• Look for transactions with suspicious memos</li>
-            <li>• Check token holders with large balances</li>
-            <li>• Trace the flow of tokens between accounts</li>
-            <li>• Sanctioned entities often have specific patterns in their memos</li>
-          </ul>
-        </AlertDescription>
-      </Alert>
-
-      {/* Investigation Tools */}
-      <div>
-        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Search className="w-5 h-5" />
-          Investigation Tools
-        </h3>
-        <div className="grid md:grid-cols-2 gap-4">
-          {investigationTools.map((tool, index) => (
-            <Card key={index} className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  {tool.icon}
-                  {tool.title}
-                </CardTitle>
-                <CardDescription>{tool.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
+      {/* Token Information Card */}
+      <div className="max-w-3xl mx-auto">
+        {investigationTools.map((tool, index) => (
+          <Card key={index} className="hover:shadow-lg transition-shadow cursor-pointer">
+            <CardHeader className="py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    {tool.icon}
+                    {tool.title}
+                  </CardTitle>
+                  <CardDescription className="mt-1">{tool.description}</CardDescription>
+                </div>
                 <Button 
                   onClick={tool.action}
                   variant="outline"
-                  className="w-full flex items-center justify-center gap-2"
+                  className="flex items-center gap-2"
                 >
                   {tool.actionLabel}
                   <ExternalLink className="w-4 h-4" />
                 </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              </div>
+            </CardHeader>
+          </Card>
+        ))}
       </div>
 
       {/* Quick Start Guide */}
